@@ -85,6 +85,9 @@ int handle_fork_request(int fd) {
             sprintf(buf, "%d", pid);
             size_t len = strlen(buf);
             debug_printf("str length: %lu\n", len);
+            /* TODO: We should not wait for this child to exit, except for benchmarking */
+            // waitpid(pid, NULL, 0);
+            /* End TODO */
             size_t send_len = send(fd, buf, len, 0 /* flags */);
             debug_printf("send length: %lu\n", send_len);
             exit(0);
