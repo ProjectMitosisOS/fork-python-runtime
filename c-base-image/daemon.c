@@ -36,6 +36,7 @@ int handle_fork_request(int fd) {
     // called by main process
     // will fork children and call os.swap
     int fd_array[5]; // 5 file descriptors to be received
+    int pipefd[2];
     int ret;
     pid_t pid;
     int target_fd, uts_namespace_fd, pid_namespace_fd, ipc_namespace_fd, mnt_namespace_fd;
@@ -78,27 +79,44 @@ int handle_fork_request(int fd) {
         close(pid_namespace_fd);
         close(ipc_namespace_fd);
         close(mnt_namespace_fd);
+        if (pipe(pipefd) == -1) {
+            printf("create pipe failed\n");
+            _exit(-1);
+        }
         pid = fork();
         if (pid) {
             // the parent process
+            close(pipefd[0]); // close unused read end
+
             char buf[PID_BUF_LENGTH];
             sprintf(buf, "%d", pid);
             size_t len = strlen(buf);
             debug_printf("str length: %lu\n", len);
-            /* TODO: We should not wait for this child to exit, except for benchmarking */
-            // waitpid(pid, NULL, 0);
-            /* End TODO */
             size_t send_len = send(fd, buf, len, 0 /* flags */);
             debug_printf("send length: %lu\n", send_len);
+            debug_printf("wait for unlock signal\n");
+            char unlock;
+            size_t receive_len = recv(fd, &unlock, sizeof(unlock), 0);
+            debug_printf("receive_len: %d\n", receive_len);
+            debug_printf("unlock: %c\n", unlock);
+            size_t count = write(pipefd[1], &unlock, sizeof(unlock));
+            assert(count == sizeof(unlock));
+            close(pipefd[1]);
             exit(0);
         } else {
             // the child process
             debug_printf("in client process\n");
             close(fork_socket_fd);
+            close(fd);
+            close(pipefd[1]);
 
             // call swap here
             assert(swap_device_fd > 0);
             debug_printf("swap_device_fd: %d\n", swap_device_fd);
+            char unlock;
+            size_t count = read(pipefd[0], &unlock, sizeof(unlock));
+            assert(count == sizeof(unlock));
+            close(pipefd[0]);
             call_swap(swap_device_fd, DUMP_KEY);
             debug_printf("should never reach here");
             perror("call_swap");
