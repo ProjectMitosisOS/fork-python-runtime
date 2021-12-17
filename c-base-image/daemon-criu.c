@@ -28,7 +28,7 @@
 // TODO: dump key should be passed by runc
 #define DUMP_KEY 73
 
-int swap_device_fd;
+// int swap_device_fd;
 int fork_socket_fd;
 int receive_fds(int fd, int fd_array[]);
 
@@ -111,17 +111,24 @@ int handle_fork_request(int fd) {
             close(pipefd[1]);
 
             // call swap here
-            assert(swap_device_fd > 0);
-            debug_printf("swap_device_fd: %d\n", swap_device_fd);
+            // assert(swap_device_fd > 0);
+            // debug_printf("swap_device_fd: %d\n", swap_device_fd);
+            // call_swap(swap_device_fd, DUMP_KEY);
+
             char unlock;
             size_t count = read(pipefd[0], &unlock, sizeof(unlock));
             assert(count == sizeof(unlock));
             close(pipefd[0]);
-            call_swap(swap_device_fd, DUMP_KEY);
+
+            char * argv[] = {"criu", "restore", "-D", "/image/checkpoint", "-v4", "-o", "restore.log", NULL};
+            execve("/bin/criu", argv, NULL);
+            // char * argv[] = {"criu", "restore", "-D", "/image/checkpoint",NULL};
+            // execve("/bin/criu", argv, NULL);
+            // char * argv[] = {"ls", NULL};
+            // execve("/bin/ls", argv, NULL);
             debug_printf("should never reach here");
-            // perror("call_swap");
-            // assert(0);
-            exit(0);
+            perror("call_swap");
+            assert(0);
         }
     }
     return 0;
@@ -189,11 +196,11 @@ int main() {
     int fd;
     struct sockaddr_un addr;
 
-    swap_device_fd = sopen();
-    if (swap_device_fd < 0) {
-        perror("sopen");
-        assert(0);
-    }
+    // swap_device_fd = sopen();
+    // if (swap_device_fd < 0) {
+    //     perror("sopen");
+    //     assert(0);
+    // }
 
     // create socket fd
     if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
@@ -233,16 +240,16 @@ int main() {
             return -1;
         }
         handle_fork_request(accept_fd);
-        int ret = close(swap_device_fd);
-        if (ret != 0) {
-            perror("close");
-            assert(0);
-        }
-        swap_device_fd = sopen();
-        if (swap_device_fd < 0) {
-            perror("sopen");
-            assert(0);
-        }
+        // int ret = close(swap_device_fd);
+        // if (ret != 0) {
+        //     perror("close");
+        //     assert(0);
+        // }
+        // swap_device_fd = sopen();
+        // if (swap_device_fd < 0) {
+        //     perror("sopen");
+        //     assert(0);
+        // }
     }
 
     return 0;

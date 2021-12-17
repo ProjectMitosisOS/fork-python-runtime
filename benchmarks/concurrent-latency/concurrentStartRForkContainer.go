@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
+	"strconv"
 	"time"
 )
 
@@ -14,6 +16,12 @@ var TEST_DURATION_SECONDS = 10
 func main() {
 	// s := launchProcess()
 	// fmt.Printf("%s", s)
+	if len(os.Args) == 2 {
+		count, err := strconv.Atoi(os.Args[1])
+		if err == nil {
+			PARALLEL_COUNT = count
+		}
+	}
 	i := 0
 	c := make(chan int64)
 	throughput := int64(0)
