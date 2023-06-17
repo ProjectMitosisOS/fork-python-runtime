@@ -15,17 +15,3 @@ cd runc
 make static
 export RUNC=${PWD}/runc
 ```
-
-## Launching the zygote container
-
-```bash
-sudo -E RUNC=${RUNC} sh ./scripts/launch_zygote_container.sh
-sudo ${RUNC} list # will show the "python-test" container
-```
-
-## Forking the zygote container
-
-```bash
-sudo -E RUNC=${RUNC} sh ./scripts/fork_zygote_container.sh
-sudo ${RUNC} list # will show the "new-python-test" container
-```
